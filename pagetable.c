@@ -179,8 +179,6 @@ char *find_physpage(addr_t vaddr, char type) {
 		p->frame = (unsigned int) new_frame << PAGE_SHIFT;
 		p->frame |= PG_ONSWAP;
 
-                p->swap_off = INVALID_SWAP;
-
 	} else {
 		hit_count++;
 	}
