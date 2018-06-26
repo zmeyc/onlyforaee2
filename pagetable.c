@@ -150,7 +150,7 @@ char *find_physpage(addr_t vaddr, char type) {
 	// (void)idx; // To keep compiler happy - remove when you have a real use.
 
 	// check whether the first time to access the 2nd-level
-	if (!(pgdir[idx].pde & PG_VALID)) {
+	if (pgdir[idx].pde == 0) {
 		pgdir[idx] = init_second_level();
 	}
 
