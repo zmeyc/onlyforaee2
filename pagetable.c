@@ -48,7 +48,7 @@ int allocate_frame(pgtbl_entry_t *p) {
 		} else { // dirty, need swap
 			evict_dirty_count++;
 			victim_pte->swap_off = swap_pageout(frame, victim_pte->swap_off);
-			// set frame onswap and clean
+			// set page onswap and clean
 			victim_pte->frame |= PG_ONSWAP;
 			victim_pte->frame &= ~PG_DIRTY;
 		}
