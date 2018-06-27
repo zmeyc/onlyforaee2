@@ -166,6 +166,10 @@ char *find_physpage(addr_t vaddr, char type) {
 		// a (simulated) physical frame should be allocated and initialized (using init_frame).
 		int new_frame = allocate_frame(p);
 		init_frame(new_frame, vaddr);
+
+		// update vaddr in coremap
+        	coremap[new_frame].vaddr = vaddr;
+
 		// for a given PFN, shift it over to leave room for the status bits
 		p->frame = (unsigned int) new_frame << PAGE_SHIFT;
 		p->frame |= PG_DIRTY;
@@ -176,6 +180,9 @@ char *find_physpage(addr_t vaddr, char type) {
 		int new_frame = allocate_frame(p);
 		// filled by reading the page data from swap and error check
 		assert(swap_pagein(new_frame, p->swap_off) == 0);
+		// update vaddr in coremap
+        	coremap[new_frame].vaddr = vaddr;
+
 		p->frame = (unsigned int) new_frame << PAGE_SHIFT;
 		p->frame |= PG_ONSWAP;
 
