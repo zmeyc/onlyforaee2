@@ -73,6 +73,7 @@ void lru_ref(pgtbl_entry_t *p) {
 
 	if (hash_table->array[frame_index] != NULL) { // hit
 		Node *target = hash_table->array[frame_index];
+
 		if (llist->tail == target) { // target is the tail of the llist
 			llist->tail = target->previous;
 		} else { // target is in the middle of the llist
@@ -84,13 +85,14 @@ void lru_ref(pgtbl_entry_t *p) {
 
 		// free the hit node
 		free(target);
-	} else { // miss
-		hash_table->array[frame_index] = new_node;
 	}
 
 	// insert new node to the head of llist
 	new_node->next = llist->head;
 	llist->head = new_node;
+	
+	// update hash_table
+	hash_table->array[frame_index] = new_node;
 }
 
 
