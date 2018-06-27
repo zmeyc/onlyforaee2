@@ -14,7 +14,7 @@ extern struct frame *coremap;
 
 typedef struct node_t {
 	unsigned int frame; // PFN which is also the index of the coremap
-	struct Node *previous, *next;
+	struct node_t *previous, *next;
 } Node;
 
 typedef struct Queue {
@@ -73,17 +73,16 @@ void lru_ref(pgtbl_entry_t *p) {
 
 	if (hash_table->array[frame_index] != NULL) { // hit
 		Node *target = hash_table->array[frame_index];
-
 		if (llist->tail == target) { // target is the tail of the llist
-			llist->tail = (Node *) target->previous;
+			llist->tail = target->previous;
 		} else { // target is in the middle of the llist
-			Node *target_prev = (Node *) target->previous;
-			Node *target_next = (Node *) target->next;
+			Node *target_prev = target->previous;
+			Node *target_next = target->next;
 			target_prev->next = target_next;
 			target_next->previous = target_prev;
 		}
 
-		// free the hit node 
+		// free the hit node
 		free(target);
 	}
 
