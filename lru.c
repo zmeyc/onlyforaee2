@@ -84,6 +84,8 @@ void lru_ref(pgtbl_entry_t *p) {
 
 		// free the hit node
 		free(target);
+	} else { // miss
+		hash_table->array[frame_index] = new_node;
 	}
 
 	// insert new node to the head of llist
