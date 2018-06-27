@@ -79,8 +79,8 @@ void lru_ref(pgtbl_entry_t *p) {
 		} else { // target is in the middle of the llist
 			Node *target_prev = (Node *) target->previous;
 			Node *target_next = (Node *) target->next;
-			(Node *) target_prev->next = target_next;
-			(Node *) target_next->previous = target_prev;
+			target_prev->next = target_next;
+			target_next->previous = target_prev;
 		}
 
 		// free the hit node 
@@ -88,7 +88,7 @@ void lru_ref(pgtbl_entry_t *p) {
 	}
 
 	// insert new node to the head of llist
-	(Node *) new_node->next = llist->head;
+	new_node->next = llist->head;
 	llist->head = new_node;
 }
 
