@@ -38,7 +38,7 @@ Hash *hash_table;
 int lru_evict() {
 	// get evicted node and its PFN
 	Node *evict_node = llist->tail;
-	int evict_PFN = evict_node->frame;
+	int evict_PFN = evict_node->frame >> PAGE_SHIFT;
 
 	// remove from hash table
 	hash_table->array[evict_PFN] = NULL;
@@ -47,7 +47,7 @@ int lru_evict() {
 	if (llist->head == llist->tail) { // case1: only one node
 		llist->head = llist->tail = NULL;
 	} else { // case2: at least 2 node
-		Node *new_tail = (Node *) evict_node->previous;
+		Node *new_tail = evict_node->previous;
 		new_tail->next = NULL;
 		llist->tail = new_tail;
 	}
