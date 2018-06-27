@@ -74,19 +74,21 @@ void lru_ref(pgtbl_entry_t *p) {
 	if (hash_table->array[frame_index] != NULL) { // hit
 		Node *target = hash_table->array[frame_index];
 
-		if ((llist->head == llist->tail) && (llist->tail == target)) {
+		if ((llist->head == target) && (llist->tail == target)) {
 			llist->head = llist->tail = NULL;
+		} else if (llist->tail == target) {
+			Node *new_tail = target->previous;
+			new_tail->next = NULL;
+			llist->tail = new_tail;
+		} else if (llist->head == target) {
+			Node *new_head = target->next;
+			new_head->previous = NULL;
+			llist->head = new_head;
 		} else {
-			if (llist->tail == target) {
-				llist->tail = target->previous;
-			} else if (llist->head == target) {
-				llist->head = target->next;
-			} else {
-				Node *target_prev = target->previous;
-				Node *target_next = target->next;
-				target_prev->next = target_next;
-				target_next->previous = target_prev;
-			}
+			Node *target_prev = target->previous;
+			Node *target_next = target->next;
+			target_prev->next = target_next;
+			target_next->previous = target_prev;
 		}
 
 		// free the hit node
