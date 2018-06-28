@@ -108,7 +108,7 @@ void lru_init() {
 	// initialize hash_table
 	hash_table = (Hash *) malloc(sizeof(Hash));
 	hash_table->capacity = memsize;
-	hash_table->array = (Node **) malloc(sizeof(Node *));
+	hash_table->array = (Node **) malloc(sizeof(Node *) * hash_table->capacity);
 
 	for (int i = 0; i < hash_table->capacity; i++) {
 		hash_table->array[i] = NULL;
