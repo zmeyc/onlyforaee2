@@ -92,6 +92,10 @@ void lru_ref(pgtbl_entry_t *p) {
 	// insert new_node into the head of double linked list
 	new_node->next = head;
 	head = new_node;
+	// check whether first page
+	if (tail == NULL) {
+		tail = new_node;
+	}
 
 	// update hash_table
 	hash_table->array[frame_index] = new_node;
