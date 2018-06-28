@@ -49,6 +49,7 @@ Page *init_hash(addr_t vaddr, int o_time, Page *head) {
 	Node *ctime_list = init_node();
 	new->ctime_list = ctime_list;
 	new->next_page = head;
+	add_time(head, o_time);
 	return new;
 }
 
@@ -122,7 +123,7 @@ int opt_evict() {
 			printf("Current pages with virtual address %lu does not existed in hash.\n", vaddr);
 		}
 
-		int c_time = (cur_page->ctime_list)->call_time;
+		int c_time = check_next_call_time(cur_page);
 
 		if (c_time == INF_TIME) {
 			return i;
@@ -146,7 +147,7 @@ void opt_ref(pgtbl_entry_t *p) {
 		printf("Current pages with virtual address %lu does not existed in hash.\n", vaddr);
 	}
 
-	if (cur_time != (cur_page->ctime_list)->call_time) {
+	if (cur_time != check_next_call_time(cur_page)) {
 		printf("Page recorded incorrect calling time.\n");
 	}
 
