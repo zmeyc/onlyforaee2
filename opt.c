@@ -6,7 +6,7 @@
 #include "pagetable.h"
 #include "sim.h"
 
-extern int memsize;
+extern unsigned memsize;
 
 extern int debug;
 
@@ -15,25 +15,42 @@ extern struct frame *coremap;
 #define INF_TIME         -1
 
 // Define data structures
+
+// Double linked list
+typedef struct node {
+	int distance;
+	struct node *next;
+} Node;
+
+/*
+ * Initialize a new page with given page id, return a pointer to head.
+ */
+Node *init_node() {
+	Node *head = malloc(sizeof(Node));
+	head->distance = INF_TIME;
+	head->next = NULL;
+	return head;
+}
+
 // Hash table (node)
-struct nlist {
+typedef struct page {
 		addr_t id; // Last 20 bits of virtual address
 		// Linked list store the length of time between each call of this page
-		node *t_interval;
+		Node *t_interval;
 		int last_occur; // Time that this page last time been called.
-		page *next_page;
-} page;
+		struct page *next_page;
+} Page;
 
 /*
  * Initialize a new page with given page id, return a pointer to the new page.
  */
-page *init_hash(addr_t vaddr, int o_time, page *head) {
-	page *new = malloc(sizeof(struct page));
+Page *init_hash(addr_t vaddr, int o_time, Page *head) {
+	Page *new = malloc(sizeof(Page));
 	new->id = vaddr >> PAGE_SHIFT;
-	node *time_interval = init_node();
+	Node *time_interval = init_node();
 	new->t_interval = time_interval;
-	last_occur = o_time;
-	next = head;
+	new->last_occur = o_time;
+	new->next_page = head;
 	return new;
 }
 
@@ -41,8 +58,8 @@ page *init_hash(addr_t vaddr, int o_time, page *head) {
  * Look up the time interval for the given virtual address. Return a pointer to
  * the page for the given virtual address, NULL if such page does not existed.
  */
-page *lookup_hash(addr_t vaddr, page* head) {
-	page *cur = head;
+Page *lookup_hash(addr_t vaddr, Page *head) {
+	Page *cur = head;
 	while (cur != NULL) {
 		if (cur->id == (vaddr >> PAGE_SHIFT)) {
 			return cur;
@@ -55,8 +72,8 @@ page *lookup_hash(addr_t vaddr, page* head) {
 /*
  * Set up waiting time for the current page inside curret time interval.
  */
-void add_time(page *cur, int cur_time) {
-	node *interval = cur->t_interval;
+void add_time(Page *cur, int cur_time) {
+	Node *interval = cur->t_interval;
 
 	while (interval->next != NULL) {
 		interval = interval->next;
@@ -64,48 +81,29 @@ void add_time(page *cur, int cur_time) {
 
 	interval->distance = cur_time - cur->last_occur;
 	cur->last_occur = cur_time;
-	node *new = init_node();
+	Node *new = init_node();
 	interval->next = new;
 }
 
 /*
  * Delete time from time interval inside current page.
  */
-int del_time(page *cur) {
-	distance = (cur->t_interval)->distance;
+int del_time(Page *cur) {
+	int distance = (cur->t_interval)->distance;
 	if (distance == 0) { // For debug only.
 		return -1;
 	} else if (distance == INF_TIME) {
 		return 0;
 	} else {
 		distance = 0;
-		node *head = cur->t_interval;
+		Node *head = cur->t_interval;
 		cur->t_interval = (cur->t_interval)->next;
 		free(head);
 	}
 	return 0;
 }
 
-// #define HASHSIZE 101
-// static struct nlist *hashtab[HASHSIZE]; /* pointer table */
-
-// Double linked list
-typedef struct node_t {
-	int distance;
-	struct node *next;
-} node;
-
-/*
- * Initialize a new page with given page id, return a pointer to head.
- */
-node *init_node() {
-	node *head = malloc(sizeof(struct node));
-	head->distance = INF_TIME;
-	head->next = NULL;
-	return head;
-}
-
-page *head = NULL;
+Page *head = NULL;
 
 /* Page to evict is chosen using the optimal (aka MIN) algorithm.
  * Returns the page frame number (which is also the index in the coremap)
@@ -117,8 +115,8 @@ int opt_evict() {
 	int index;
 
 	for (int i = 0; i < memsize; i++) {
-		addr_t vaddr = coremap[i]->vaddr;
-		page *cur_page = lookup_hash(vaddr, head);
+		addr_t vaddr = coremap[i].vaddr;
+		Page *cur_page = lookup_hash(vaddr, head);
 		int cur_time = (cur_page->t_interval)->distance;
 
 		if (cur_time == INF_TIME) {
@@ -137,8 +135,8 @@ int opt_evict() {
  */
 void opt_ref(pgtbl_entry_t *p) {
 
-	addr_t vaddr = coremap[p->frame >> PAGE_SHIFT]->vaddr;
-	page *cur_page = lookup_hash(vaddr, head);
+	addr_t vaddr = coremap[p->frame >> PAGE_SHIFT].vaddr;
+	Page *cur_page = lookup_hash(vaddr, head);
 	int result = del_time(cur_page);
 
 	if (result != 0) { // For debug only
@@ -151,6 +149,7 @@ void opt_ref(pgtbl_entry_t *p) {
  */
 void opt_init() {
 	int distance = 0;
+	FILE *tfp = NULL;
 
 	if(tracefile != NULL) {
 		if((tfp = fopen(tracefile, "r")) == NULL) {
@@ -163,7 +162,7 @@ void opt_init() {
 	addr_t vaddr = 0;
 	char type;
 
-	while(fgets(buf, MAXLINE, infp) != NULL) {
+	while(fgets(buf, MAXLINE, tfp) != NULL) {
 
 		if(buf[0] != '=') {
 			sscanf(buf, "%c %lx", &type, &vaddr);
@@ -171,7 +170,7 @@ void opt_init() {
 				printf("%c %lx\n", type, vaddr);
 			}
 
-			page *cur_page = lookup();
+			Page *cur_page = lookup_hash(vaddr, head);
 			if (cur_page == NULL) { // New vaddr (page), init new entry
 				head = init_hash(vaddr, distance, head);
 			} else { // If in hash table, add distance
@@ -184,7 +183,7 @@ void opt_init() {
 		}
 	}
 
-	if((tfp = fclose(tracefile)) == NULL) {
+	if(fclose(tfp) != 0) {
 		perror("Error opening tracefile:");
 		exit(1);
 	}
