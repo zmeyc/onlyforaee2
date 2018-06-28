@@ -49,7 +49,7 @@ Page *init_hash(addr_t vaddr, int o_time, Page *head) {
 	Node *ctime_list = init_node();
 	new->ctime_list = ctime_list;
 	new->next_page = head;
-	add_time(head, o_time);
+	add_time(new, o_time);
 	return new;
 }
 
