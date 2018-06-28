@@ -22,9 +22,9 @@ typedef struct Hash {
 	Node **array; // array of nodes
 } Hash;
 
-Node *head; // most recent used page (insert)
-Node *tail; // least recent used page (evict)
-Hash *hash_table;
+Node *head = NULL; // most recent used page (insert)
+Node *tail = NULL; // least recent used page (evict)
+Hash *hash_table = NULL;
 
 
 /* Page to evict is chosen using the accurate LRU algorithm.
@@ -107,7 +107,7 @@ void lru_ref(pgtbl_entry_t *p) {
  */
 void lru_init() {
 	// initialize head and tail
-	head = tail = NULL;
+	// head = tail = NULL;
 
 	// initialize hash_table
 	hash_table = (Hash *) malloc(sizeof(Hash));
