@@ -41,6 +41,21 @@ typedef struct page {
 } Page;
 
 /*
+ * Initialize a new page with given page id, return a pointer to the new page.
+ */
+Page *init_hash(addr_t vaddr, int o_time, Page *head) {
+	Page *new = malloc(sizeof(Page));
+	new->id = vaddr >> PAGE_SHIFT;
+	Node *ctime_list = init_node();
+	ctime_list->call_time = o_time;
+	Node *next = init_node();
+	ctime_list->next = next;
+	new->ctime_list = ctime_list;
+	new->next_page = head;
+	return new;
+}
+
+/*
  * Look up the time interval for the given virtual address. Return a pointer to
  * the page for the given virtual address, NULL if such page does not exist.
  */
@@ -84,19 +99,6 @@ int del_time(Page *cur) {
 		free(head);
 	}
 	return 0;
-}
-
-/*
- * Initialize a new page with given page id, return a pointer to the new page.
- */
-Page *init_hash(addr_t vaddr, int o_time, Page *head) {
-	Page *new = malloc(sizeof(Page));
-	new->id = vaddr >> PAGE_SHIFT;
-	Node *ctime_list = init_node();
-	new->ctime_list = ctime_list;
-	new->next_page = head;
-	add_time(new, o_time);
-	return new;
 }
 
 int check_next_call_time(Page *cur_page) {
