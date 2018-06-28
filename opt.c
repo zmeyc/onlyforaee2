@@ -12,22 +12,22 @@ extern int debug;
 
 extern struct frame *coremap;
 
-#define INF_TIME         -1
+#define INF_TIME -1
 
 // Define data structures
 
-// Double linked list
+// Linked list to store time that such page been called.
 typedef struct node {
-	int distance;
+	int call_time;
 	struct node *next;
 } Node;
 
 /*
- * Initialize a new page with given page id, return a pointer to head.
+ * Initialize a new node with the given page id, return a pointer to head.
  */
 Node *init_node() {
 	Node *head = malloc(sizeof(Node));
-	head->distance = INF_TIME;
+	head->call_time = INF_TIME;
 	head->next = NULL;
 	return head;
 }
@@ -35,9 +35,8 @@ Node *init_node() {
 // Hash table (node)
 typedef struct page {
 		addr_t id; // Last 20 bits of virtual address
-		// Linked list store the length of time between each call of this page
-		Node *t_interval;
-		int last_occur; // Time that this page last time been called.
+		// Linked list store the calling time of this page.
+		Node *ctime_list; // Pointer to the head of the linked list.
 		struct page *next_page;
 } Page;
 
@@ -47,16 +46,15 @@ typedef struct page {
 Page *init_hash(addr_t vaddr, int o_time, Page *head) {
 	Page *new = malloc(sizeof(Page));
 	new->id = vaddr >> PAGE_SHIFT;
-	Node *time_interval = init_node();
-	new->t_interval = time_interval;
-	new->last_occur = o_time;
+	Node *ctime_list = init_node();
+	new->ctime_list = ctime_list;
 	new->next_page = head;
 	return new;
 }
 
 /*
  * Look up the time interval for the given virtual address. Return a pointer to
- * the page for the given virtual address, NULL if such page does not existed.
+ * the page for the given virtual address, NULL if such page does not exist.
  */
 Page *lookup_hash(addr_t vaddr, Page *head) {
 	Page *cur = head;
@@ -70,17 +68,16 @@ Page *lookup_hash(addr_t vaddr, Page *head) {
 }
 
 /*
- * Set up waiting time for the current page inside curret time interval.
+ * Set up calling time for the current page when this page is called.
  */
 void add_time(Page *cur, int cur_time) {
-	Node *interval = cur->t_interval;
+	Node *interval = cur->ctime_list;
 
 	while (interval->next != NULL) {
 		interval = interval->next;
 	}
 
-	interval->distance = cur_time - cur->last_occur;
-	cur->last_occur = cur_time;
+	interval->call_time = cur_time;
 	Node *new = init_node();
 	interval->next = new;
 }
@@ -89,21 +86,24 @@ void add_time(Page *cur, int cur_time) {
  * Delete time from time interval inside current page.
  */
 int del_time(Page *cur) {
-	int distance = (cur->t_interval)->distance;
-	if (distance == 0) { // For debug only.
+	int c_time = (cur->ctime_list)->call_time;
+
+	if (c_time == INF_TIME) {
 		return -1;
-	} else if (distance == INF_TIME) {
-		return 0;
 	} else {
-		distance = 0;
-		Node *head = cur->t_interval;
-		cur->t_interval = (cur->t_interval)->next;
+		Node *head = cur->ctime_list;
+		cur->ctime_list = (cur->ctime_list)->next;
 		free(head);
 	}
 	return 0;
 }
 
+int check_next_call_time(Page *cur_page) {
+	return (cur_page->ctime_list)->call_time;
+}
+
 Page *head = NULL;
+int cur_time = 0;
 
 /* Page to evict is chosen using the optimal (aka MIN) algorithm.
  * Returns the page frame number (which is also the index in the coremap)
@@ -111,18 +111,23 @@ Page *head = NULL;
  */
 int opt_evict() {
 
-	int distance = 0;
+	int last_call = 0;
 	int index;
 
 	for (int i = 0; i < memsize; i++) {
 		addr_t vaddr = coremap[i].vaddr;
 		Page *cur_page = lookup_hash(vaddr, head);
-		int cur_time = (cur_page->t_interval)->distance;
 
-		if (cur_time == INF_TIME) {
+		if (cur_page == NULL) {
+			printf("Current pages with virtual address %lu does not existed in hash.\n", vaddr);
+		}
+
+		int c_time = (cur_page->ctime_list)->call_time;
+
+		if (c_time == INF_TIME) {
 			return i;
-		} else if (cur_time > distance) {
-			distance = cur_time;
+		} else if (c_time > last_call) {
+			last_call = c_time;
 			index = i;
 		}
 	}
@@ -137,11 +142,21 @@ void opt_ref(pgtbl_entry_t *p) {
 
 	addr_t vaddr = coremap[p->frame >> PAGE_SHIFT].vaddr;
 	Page *cur_page = lookup_hash(vaddr, head);
+	if (cur_page == NULL) {
+		printf("Current pages with virtual address %lu does not existed in hash.\n", vaddr);
+	}
+
+	if (cur_time != (cur_page->ctime_list)->call_time) {
+		printf("Page recorded incorrect calling time.\n");
+	}
+
 	int result = del_time(cur_page);
 
 	if (result != 0) { // For debug only
 		printf("Try to delete time from interval with zero content.\n");
 	}
+
+	cur_time++;
 }
 
 /* Initializes any data structures needed for this
