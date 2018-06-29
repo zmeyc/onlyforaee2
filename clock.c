@@ -12,7 +12,7 @@ extern int debug;
 
 extern struct frame *coremap;
 
-int hand; // the clock hand, index of the oldest page
+int hand; // clock hand, index of the oldest page
 
 /* Page to evict is chosen using the clock algorithm.
  * Returns the page frame number (which is also the index in the coremap)
@@ -24,12 +24,11 @@ int clock_evict() {
 
 	for (; i < memsize; i = (i + 1) % memsize) {
 		if (coremap[i].reference == 0) { // reference = 0: evicted
-			coremap[i].reference = 1; // new page insert into clock
-			hand++;
+			coremap[i].reference = 1; // new page insert here
+			hand = (i + 1) % memsize;
 			return i;
 		} else { // reference = 1: set reference 0, advance hand
 			coremap[i].reference = 0;
-			hand++;
 		}
 	}
 
