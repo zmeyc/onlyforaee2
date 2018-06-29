@@ -23,10 +23,11 @@ int clock_evict() {
 	int i = hand;
 
 	for (; i < memsize; i = (i + 1) % memsize) {
-		if (coremap[i].reference == 0) { // this page evict, hand points to next page
-			coremap[i].reference = 1;
+		if (coremap[i].reference == 0) { // reference = 0: evicted
+			coremap[i].reference = 1; // new page insert into clock
+			hand++;
 			return i;
-		} else { // set 0, hand++
+		} else { // reference = 1: set reference 0, advance hand
 			coremap[i].reference = 0;
 			hand++;
 		}
