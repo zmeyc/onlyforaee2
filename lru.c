@@ -17,14 +17,9 @@ typedef struct node_t {
 	struct node_t *previous, *next;
 } Node;
 
-typedef struct Hash {
-	int capacity; // the capacity of the hash table
-	Node **array; // array of nodes
-} Hash;
-
 Node *head; // most recent used page (insert)
 Node *tail; // least recent used page (evict)
-Hash *hash_table;
+Node **hash_table; // array of pointers to node
 
 
 /* Page to evict is chosen using the accurate LRU algorithm.
@@ -37,7 +32,7 @@ int lru_evict() {
 	int evict_PFN = evict_node->frame;
 
 	// remove from hash table
-	hash_table->array[evict_PFN] = NULL;
+	hash_table[evict_PFN] = NULL;
 
 	// updated double linked list
 	if (head == tail) { // case1: only one node
@@ -50,7 +45,7 @@ int lru_evict() {
 
 	// free the evict node
 	free(evict_node);
-	
+
 	return evict_PFN;
 }
 
@@ -67,7 +62,7 @@ void lru_ref(pgtbl_entry_t *p) {
 	new_node->previous = new_node->next = NULL;
 
 	// check hit ot miss
-	Node *target = hash_table->array[frame_index];
+	Node *target = hash_table[frame_index];
 	if (target != NULL) { // hit
 		if ((head == target) && (tail == target)) {
 			head = tail = NULL;
@@ -100,24 +95,22 @@ void lru_ref(pgtbl_entry_t *p) {
 	}
 
 	// update hash_table
-	hash_table->array[frame_index] = new_node;
+	hash_table[frame_index] = new_node;
 }
 
 
-/* Initialize any data structures needed for this 
- * replacement algorithm 
+/* Initialize any data structures needed for this
+ * replacement algorithm
  */
 void lru_init() {
 	// initialize head and tail
 	head = tail = NULL;
 
 	// initialize hash_table
-	hash_table = (Hash *) malloc(sizeof(Hash));
-	hash_table->capacity = memsize;
-	hash_table->array = (Node **) malloc(sizeof(Node *) * hash_table->capacity);
+	hash_table = (Node **) malloc(sizeof(Node *) * memsize);
 
-	for (int i = 0; i < hash_table->capacity; i++) {
-		hash_table->array[i] = NULL;
+	for (int i = 0; i < memsize; i++) {
+		hash_table[i] = NULL;
 	}
 }
 
