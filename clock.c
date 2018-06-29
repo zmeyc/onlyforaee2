@@ -12,10 +12,7 @@ extern int debug;
 
 extern struct frame *coremap;
 
-int clock_hand;
-unsigned *framepages;
-int *references;
-
+int hand; // the clock hand, index of the oldest page
 
 /* Page to evict is chosen using the clock algorithm.
  * Returns the page frame number (which is also the index in the coremap)
@@ -23,12 +20,19 @@ int *references;
  */
 
 int clock_evict() {
-	while (references[clock_hand] != 0){
-		references[clock_hand] = 0;
-		clock_hand = (clock_hand + 1) % memsize;
+	int i = hand;
+
+	for (; i < memsize; i = (i + 1) % memsize) {
+		if (coremap[i].reference == 0) { // this page evict, hand points to next page
+			coremap[i].reference = 1;
+			return i;
+		} else { // set 0, hand++
+			coremap[i].reference = 0;
+			hand++;
+		}
 	}
-	int frame = (int) framepages[clock_hand];
-	return frame;
+
+	return 0;
 }
 
 /* This function is called on each access to a page to update any information
@@ -36,28 +40,17 @@ int clock_evict() {
  * Input: The page table entry for the page that is being accessed.
  */
 void clock_ref(pgtbl_entry_t *p) {
-	unsigned frame_temp = PGTBL_INDEX(p->frame);
-	int i;
-	for (i = 0; i < memsize; i++){
-		if (frame_temp == framepages[i]){
-			references[i] = 1;
-		}
-	}
-	references[clock_hand] = 1;
-	framepages[clock_hand] = frame_temp;
-	clock_hand += 1;
+	coremap[p->frame >> PAGE_SHIFT].reference = 1;
 }
 
 /* Initialize any data structures needed for this replacement
  * algorithm. 
  */
 void clock_init() {
-	int * references = malloc(sizeof(int)*memsize);
-	unsigned * framepages = malloc(sizeof(unsigned)*memsize);
-	clock_hand = 0;
-	int j = 0;
-	for (j = 0; j<memsize; j++){
-		framepages[j] = 0;
-		references[j] = 0;
+	hand = 0;
+
+	for (int i = 0; i < memsize; i++) {
+		coremap[i].reference = -1; // initially, no page in, set reference -1
 	}
 }
+
