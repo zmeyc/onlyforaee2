@@ -12,46 +12,47 @@ extern int debug;
 
 extern struct frame *coremap;
 
-#define INF_TIME -1
-
 // Define data structures
 
 // Linked list to store time that such page been called.
 typedef struct node {
-	int call_time;
+	int ref_time;
 	struct node *next;
 } Node;
-
-/*
- * Initialize a new node with the given page id, return a pointer to head.
- */
-Node *init_node() {
-	Node *head = malloc(sizeof(Node));
-	head->call_time = INF_TIME;
-	head->next = NULL;
-	return head;
-}
 
 // Hash table (node)
 typedef struct page {
 		addr_t id; // Last 20 bits of virtual address
 		// Linked list store the calling time of this page.
-		Node *ctime_list; // Pointer to the head of the linked list.
+		Node *ref_time_head; // Pointer to the head of the linked list.
+		Node *ref_time_tail; // Pointer to the tail of the linked list.
 		struct page *next_page;
 } Page;
+
+// Global variables
+Page *page_ref_list = NULL;
+Page **hash_table = NULL;
+int cur_time = 0; // Add up int opt_ref
+
+/*
+ * Initialize a new node with the given page id, return a pointer to head.
+ */
+Node *init_node(int ref_time) {
+	Node *new = malloc(sizeof(Node));
+	new->ref_time = ref_time;
+	new->next = NULL;
+	return new;
+}
 
 /*
  * Initialize a new page with given page id, return a pointer to the new page.
  */
-Page *init_hash(addr_t vaddr, int o_time, Page *head) {
+Page *init_hash(addr_t vaddr, int o_time) {
 	Page *new = malloc(sizeof(Page));
 	new->id = vaddr >> PAGE_SHIFT;
-	Node *ctime_list = init_node();
-	ctime_list->call_time = o_time;
-	Node *next = init_node();
-	ctime_list->next = next;
-	new->ctime_list = ctime_list;
-	new->next_page = head;
+	new->ref_time_head = init_node(o_time);
+	new->ref_time_tail = new->ref_time_head;
+	new->next_page = NULL;
 	return new;
 }
 
@@ -59,7 +60,7 @@ Page *init_hash(addr_t vaddr, int o_time, Page *head) {
  * Look up the time interval for the given virtual address. Return a pointer to
  * the page for the given virtual address, NULL if such page does not exist.
  */
-Page *lookup_hash(addr_t vaddr, Page *head) {
+Page *lookup_pre(addr_t vaddr, Page *head) {
 	Page *cur = head;
 	while (cur != NULL) {
 		if (cur->id == (vaddr >> PAGE_SHIFT)) {
@@ -71,42 +72,39 @@ Page *lookup_hash(addr_t vaddr, Page *head) {
 }
 
 /*
+ * Look up the time interval for the given index inside trace file. Return a
+ * pointer to the page for the given virtual address, NULL if such page does not
+ * exist.
+ */
+Page *lookup_hash(int c_time) {
+	return hash_table[c_time];
+}
+
+/*
  * Set up calling time for the current page when this page is called.
  */
-void add_time(Page *cur, int cur_time) {
-	Node *interval = cur->ctime_list;
-
-	while (interval->next != NULL) {
-		interval = interval->next;
-	}
-
-	interval->call_time = cur_time;
-	Node *new = init_node();
-	interval->next = new;
+void add_time(Page *cur, int c_time) {
+	Node *last_call = cur->ref_time_tail;
+	Node *new = init_node(c_time);
+	last_call->next = new;
+	cur->ref_time_tail = new;
 }
 
 /*
  * Delete time from time interval inside current page.
  */
-int del_time(Page *cur) {
-	int c_time = (cur->ctime_list)->call_time;
+void del_time(Page *cur) {
+	Node *time_l = cur->ref_time_head;
+	cur->ref_time_head = time_l->next;
+	free(time_l);
+}
 
-	if (c_time == INF_TIME) {
+int check_ref_time(Page *cur_page) {
+	if (cur_page->ref_time_head == NULL) {
 		return -1;
-	} else {
-		Node *head = cur->ctime_list;
-		cur->ctime_list = (cur->ctime_list)->next;
-		free(head);
 	}
-	return 0;
+	return (cur_page->ref_time_head)->ref_time;
 }
-
-int check_next_call_time(Page *cur_page) {
-	return (cur_page->ctime_list)->call_time;
-}
-
-Page *head = NULL;
-int cur_time = 0;
 
 /* Page to evict is chosen using the optimal (aka MIN) algorithm.
  * Returns the page frame number (which is also the index in the coremap)
@@ -118,19 +116,20 @@ int opt_evict() {
 	int index;
 
 	for (int i = 0; i < memsize; i++) {
-		addr_t vaddr = coremap[i].vaddr;
-		Page *cur_page = lookup_hash(vaddr, head);
+		Page *cur_page = lookup_hash(coremap[i].in_time);
 
 		if (cur_page == NULL) {
-			printf("Current pages with virtual address %lu does not existed in hash.\n", vaddr);
+			printf("Current pages with index %d does not existed in hash.\n", i);
 		}
 
-		int c_time = check_next_call_time(cur_page);
+		int r_time = check_ref_time(cur_page);
 
-		if (c_time == INF_TIME) {
+		if (r_time == -1) {
 			return i;
-		} else if (c_time > last_call) {
-			last_call = c_time;
+		}
+
+		if (r_time > last_call) {
+			last_call = r_time;
 			index = i;
 		}
 	}
@@ -142,22 +141,17 @@ int opt_evict() {
  * Input: The page table entry for the page that is being accessed.
  */
 void opt_ref(pgtbl_entry_t *p) {
-
-	addr_t vaddr = coremap[p->frame >> PAGE_SHIFT].vaddr;
-	Page *cur_page = lookup_hash(vaddr, head);
+	coremap[p->frame >> PAGE_SHIFT].in_time = cur_time;
+	Page *cur_page = lookup_hash(cur_time);
 	if (cur_page == NULL) {
-		printf("Current pages with virtual address %lu does not existed in hash.\n", vaddr);
+		printf("Current pages with index %d does not existed in hash.\n", cur_time);
 	}
 
-	if (cur_time != check_next_call_time(cur_page)) {
+	if (cur_time != check_ref_time(cur_page)) {
 		printf("Page recorded incorrect calling time.\n");
 	}
 
-	int result = del_time(cur_page);
-
-	if (result != 0) { // For debug only
-		printf("Try to delete time from interval with zero content.\n");
-	}
+	del_time(cur_page);
 
 	cur_time++;
 }
@@ -166,7 +160,7 @@ void opt_ref(pgtbl_entry_t *p) {
  * replacement algorithm.
  */
 void opt_init() {
-	int distance = 0;
+	int distance = 0; // Record time (or line number inside tra)
 	FILE *tfp = NULL;
 
 	if(tracefile != NULL) {
@@ -188,9 +182,11 @@ void opt_init() {
 				printf("%c %lx\n", type, vaddr);
 			}
 
-			Page *cur_page = lookup_hash(vaddr, head);
+			Page *cur_page = lookup_pre(vaddr, page_ref_list);
 			if (cur_page == NULL) { // New vaddr (page), init new entry
-				head = init_hash(vaddr, distance, head);
+				Page *new = init_hash(vaddr, distance);
+				new->next_page = page_ref_list;
+				page_ref_list = new;
 			} else { // If in hash table, add distance
 				add_time(cur_page, distance);
 			}
@@ -199,6 +195,17 @@ void opt_init() {
 		} else {
 			continue;
 		}
+	}
+
+	hash_table = malloc(sizeof(Page *) * distance);
+	Page *c_page = page_ref_list;
+	while (c_page != NULL) {
+		Node *c_time = c_page->ref_time_head;
+		while (c_time != NULL) {
+			hash_table[c_time->ref_time] = c_page;
+			c_time = c_time->next;
+		}
+		c_page = c_page->next_page;
 	}
 
 	if(fclose(tfp) != 0) {
