@@ -47,7 +47,7 @@ Node *init_node(int ref_time) {
 /*
  * Initialize a new page with given page id, return a pointer to the new page.
  */
-Page *init_hash(addr_t vaddr, int o_time) {
+Page *init_page(addr_t vaddr, int o_time) {
 	Page *new = malloc(sizeof(Page));
 	new->id = vaddr >> PAGE_SHIFT;
 	new->ref_time_head = init_node(o_time);
@@ -184,7 +184,7 @@ void opt_init() {
 
 			Page *cur_page = lookup_pre(vaddr, page_ref_list);
 			if (cur_page == NULL) { // New vaddr (page), init new entry
-				Page *new = init_hash(vaddr, distance);
+				Page *new = init_page(vaddr, distance);
 				new->next_page = page_ref_list;
 				page_ref_list = new;
 			} else { // If in hash table, add distance
