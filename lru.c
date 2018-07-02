@@ -60,7 +60,7 @@ void lru_ref(pgtbl_entry_t *p) {
 	new_node->frame = frame_index;
 	new_node->previous = new_node->next = NULL;
 
-	// check hit ot miss
+	// check hit or miss
 	Node *target = hash_table[frame_index];
 	if (target != NULL) { // hit
 		if ((head == target) && (tail == target)) {
