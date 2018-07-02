@@ -26,7 +26,6 @@ Node **hash_table; // array of pointers to node
  * Returns the page frame number (which is also the index in the coremap)
  * for the page that is to be evicted.
  */
-
 int lru_evict() {
 	Node *evict_node = tail;
 	int evict_PFN = evict_node->frame;
