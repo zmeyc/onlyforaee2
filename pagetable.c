@@ -40,16 +40,21 @@ int allocate_frame(pgtbl_entry_t *p) {
 		// Write victim page to swap, if needed (dirty bit), and update pagetable
 		// IMPLEMENTATION NEEDED
 		pgtbl_entry_t *victim_pte = coremap[frame].pte;
-		// To be evicted, not in memory, set invalid
+		// The page evicted from the frame to the disk, the frame set invalid
 		victim_pte->frame &= ~PG_VALID;
 
-		if (!(victim_pte->frame & PG_DIRTY)) { // clean
+		if (!(victim_pte->frame & PG_DIRTY)) { // Clean, the page has not been modified
 			evict_clean_count++;
-		} else { // dirty, need swap
+		} else { // Dirty, the page has been modified, need to swap out to the disk
 			evict_dirty_count++;
+
+            // Update the location on the disk
 			victim_pte->swap_off = swap_pageout(frame, victim_pte->swap_off);
-			// set page onswap and clean
+
+			// Set the page is on the swapfile
 			victim_pte->frame |= PG_ONSWAP;
+
+            // Already update the swap_off, not page is clean
 			victim_pte->frame &= ~PG_DIRTY;
 		}
 	}
@@ -149,40 +154,45 @@ char *find_physpage(addr_t vaddr, char type) {
 	// Use top-level page directory to get pointer to 2nd-level page table
 	// (void)idx; // To keep compiler happy - remove when you have a real use.
 
-	// check whether the first time to access the 2nd-level
+	// Initialize the 2nd-level page table if this is the first time accessing it
 	if (pgdir[idx].pde == 0) {
 		pgdir[idx] = init_second_level();
 	}
 
-	// pointer to the target page table
+	// The pointer points to the target 2nd-level page table
 	pgtbl_entry_t *pgtbl = (pgtbl_entry_t *)(pgdir[idx].pde & PAGE_MASK);
 
-	// Use vaddr to get index into 2nd-level page table and initialize 'p'
+	// Pointer arithmetic, use vaddr to get the PTE in 2nd-level page table
 	p = pgtbl + PGTBL_INDEX(vaddr);
 
 	// Check if p is valid or not, on swap or not, and handle appropriately
-	if ((!(p->frame & PG_VALID)) && (!(p->frame & PG_ONSWAP))) { // invalid, not onswap
+	if ((!(p->frame & PG_VALID)) && (!(p->frame & PG_ONSWAP))) { // Invalid, not onswap
 		miss_count++;
-		// a (simulated) physical frame should be allocated and initialized (using init_frame).
+
+		// A (simulated) physical frame be allocated and initialized.
 		int new_frame = allocate_frame(p);
 		init_frame(new_frame, vaddr);
 
-		// update vaddr in coremap
-        	coremap[new_frame].vaddr = vaddr;
+		// Update vaddr in coremap for OPT algorithm
+        coremap[new_frame].vaddr = vaddr;
 
-		// for a given PFN, shift it over to leave room for the status bits
+		// For a given PFN, shift it over to leave room for the status bits
 		p->frame = (unsigned int) new_frame << PAGE_SHIFT;
 		p->frame |= PG_DIRTY;
 
-	} else if ((!(p->frame & PG_VALID)) && (p->frame & PG_ONSWAP)) { // invalid, onswap
+	} else if ((!(p->frame & PG_VALID)) && (p->frame & PG_ONSWAP)) { // Invalid, onswap
 		miss_count++;
-		// a (simulated) physical frame should be allocated
-		int new_frame = allocate_frame(p);
-		// filled by reading the page data from swap and error check
-		assert(swap_pagein(new_frame, p->swap_off) == 0);
-		// update vaddr in coremap
-        	coremap[new_frame].vaddr = vaddr;
 
+		// A (simulated) physical frame be allocated
+		int new_frame = allocate_frame(p);
+
+		// Filled by reading the page data from swap and error checking
+		assert(swap_pagein(new_frame, p->swap_off) == 0);
+
+		// Update vaddr in coremap for OPT algorithm
+        coremap[new_frame].vaddr = vaddr;
+
+        // For a given PFN, shift it over to leave room for the status bits
 		p->frame = (unsigned int) new_frame << PAGE_SHIFT;
 		p->frame |= PG_ONSWAP;
 
