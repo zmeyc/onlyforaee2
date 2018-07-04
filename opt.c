@@ -101,7 +101,6 @@ void opt_init() {
 
 	// Allocate the space for the page_list
 	page_list = malloc(sizeof(Page) * size);
-	// fseek(tfp, 0, SEEK_SET); // Set to the beginning of the tracefile
 
 	// Read the lines
 	while(fgets(buf, MAXLINE, tfp) != NULL) {
