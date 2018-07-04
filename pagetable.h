@@ -70,7 +70,7 @@ struct frame {
 
 	// New attribute for the opt algorithm
 	int next_ref_time; // To store the next reference time of the page stored in
-                     // current frame
+                       // current frame
 
 	// New attribute for the clock algorithm
 	int reference;
