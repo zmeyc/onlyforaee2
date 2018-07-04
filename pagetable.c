@@ -173,9 +173,6 @@ char *find_physpage(addr_t vaddr, char type) {
 		int new_frame = allocate_frame(p);
 		init_frame(new_frame, vaddr);
 
-		// Update vaddr in coremap for OPT algorithm
-        coremap[new_frame].vaddr = vaddr;
-
 		// For a given PFN, shift it over to leave room for the status bits
 		p->frame = (unsigned int) new_frame << PAGE_SHIFT;
 		p->frame |= PG_DIRTY;
@@ -188,9 +185,6 @@ char *find_physpage(addr_t vaddr, char type) {
 
 		// Filled by reading the page data from swap and error checking
 		assert(swap_pagein(new_frame, p->swap_off) == 0);
-
-		// Update vaddr in coremap for OPT algorithm
-        coremap[new_frame].vaddr = vaddr;
 
         // For a given PFN, shift it over to leave room for the status bits
 		p->frame = (unsigned int) new_frame << PAGE_SHIFT;
