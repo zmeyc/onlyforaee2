@@ -69,8 +69,8 @@ struct frame {
 	// ******* New attributes add for replacement algorithm *******
 
 	// New attribute for the opt algorithm
-	addr_t vaddr;   // The vaddr of the page in this frame
-	int in_time; // The time of the current page stored in this frame
+	int next_ref_time; // To store the next reference time of the page stored in
+                     // current frame
 
 	// New attribute for the clock algorithm
 	int reference;
