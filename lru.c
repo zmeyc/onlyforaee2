@@ -13,13 +13,13 @@ extern int debug;
 extern struct frame *coremap;
 
 typedef struct node_t {
-	unsigned int frame; // PFN which is the index of coremap
+	unsigned int frame; // PFN which is the index of the coremap
 	struct node_t *previous, *next;
 } Node;
 
-Node *head; // most recent used page (insert)
-Node *tail; // least recent used page (evict)
-Node **hash_table; // array of pointers to node
+Node *head; // Most recent used page (new node inserts to here)
+Node *tail; // Least recent used page (victim node evicts from here)
+Node **hash_table; // Array of pointers to the nodes
 
 
 /* Page to evict is chosen using the accurate LRU algorithm.
@@ -30,13 +30,13 @@ int lru_evict() {
 	Node *evict_node = tail;
 	int evict_PFN = evict_node->frame;
 
-	// remove from hash table
+	// Remove the pointer to the evicted node from the hash_table
 	hash_table[evict_PFN] = NULL;
 
-	// updated double linked list
-	if (head == tail) { // case1: only one node
+	// Updated the double linked list
+	if (head == tail) { // case1: Only one node in the double linked list
 		head = tail = NULL;
-	} else { // case2: at least 2 node
+	} else { // case2: At least 2 nodes in the double linked list
 		Node *new_tail = evict_node->previous;
 		new_tail->next = NULL;
 		tail = new_tail;
@@ -53,16 +53,19 @@ int lru_evict() {
  * Input: The page table entry for the page that is being accessed.
  */
 void lru_ref(pgtbl_entry_t *p) {
-	// construct a new node
+	// Construct a new node, and get the PFN of the accessed page
 	Node *new_node = (Node *) malloc(sizeof(Node));
 	unsigned int frame_index = p->frame >> PAGE_SHIFT;
-	// initialize new node
+
+	// Initialize the attributes of the new node
 	new_node->frame = frame_index;
 	new_node->previous = new_node->next = NULL;
 
-	// check hit or miss
+	// Get the pointer to the accessed page in the hash_table
 	Node *target = hash_table[frame_index];
-	if (target != NULL) { // hit
+
+	// Check the accessed page hit or miss
+	if (target != NULL) { // Hit, need to be removed from the list
 		if ((head == target) && (tail == target)) {
 			head = tail = NULL;
 		} else if (tail == target) {
@@ -83,8 +86,8 @@ void lru_ref(pgtbl_entry_t *p) {
 		free(target);
 	}
 
-	// insert new_node into the head of double linked list
-	if (tail == NULL) { // first page
+	// Insert new_node into the head of double linked list
+	if (tail == NULL) {
 		head = tail = new_node;
 	} else {
 		Node *old_head = head;
@@ -93,7 +96,7 @@ void lru_ref(pgtbl_entry_t *p) {
 		head = new_node;
 	}
 
-	// update hash_table
+	// Update the pointer in the hash_table to point to the new_node
 	hash_table[frame_index] = new_node;
 }
 
@@ -102,12 +105,13 @@ void lru_ref(pgtbl_entry_t *p) {
  * replacement algorithm
  */
 void lru_init() {
-	// initialize head and tail
+	// Initialize head and tail
 	head = tail = NULL;
 
-	// initialize hash_table
+	// Allocate the space on the heap for the hash_table
 	hash_table = (Node **) malloc(sizeof(Node *) * memsize);
 
+	// Initialize all the pointers in the hash_table to NULL
 	for (int i = 0; i < memsize; i++) {
 		hash_table[i] = NULL;
 	}
