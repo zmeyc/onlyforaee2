@@ -15,4 +15,4 @@ traces: $(PROGS)
 
 .PHONY: clean
 clean :
-	rm -f simpleloop matmul blocked tr-*.ref *.marker *~
+	rm -f simpleloop matmul blocked fibonacci tr-*.ref *.marker *~
