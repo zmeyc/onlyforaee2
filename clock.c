@@ -18,7 +18,6 @@ int hand; // Clock hand, the index of the oldest page in the coremap
  * Returns the page frame number (which is also the index in the coremap)
  * for the page that is to be evicted.
  */
-
 int clock_evict() {
 	int i = hand;
 
