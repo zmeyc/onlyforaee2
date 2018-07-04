@@ -65,9 +65,18 @@ struct frame {
 	char in_use;       // True if frame is allocated, False if frame is free
 	pgtbl_entry_t *pte;// Pointer back to pagetable entry (pte) for page
 	                   // stored in this frame
-	addr_t vaddr;   // New attribute for opt algo
-	int reference;   // New attribute for clock algo
-	int in_time; // Store the time that current page is stoed in this frame.
+
+	// ******* New attributes add for replacement algorithm *******
+
+	// New attribute for the opt algorithm
+	addr_t vaddr;   // The vaddr of the page in this frame
+	int in_time; // The time of the current page stored in this frame
+
+	// New attribute for the clock algorithm
+	int reference;
+	// Set -1 if there is no page in this frame
+	// Set 0 if the page in this frame has not been referenced
+	// Set 1 if the page in this frame has been referenced
 };
 
 /* The coremap holds information about physical memory.
