@@ -14,7 +14,7 @@ extern int debug;
 
 extern struct frame *coremap;
 
-// Define data structures
+// Define the data structure
 typedef struct page {
 	addr_t id; // Last 20 bits of virtual address
 	int next_ref; // Store index of the next reference of this page, -1 if none
@@ -23,6 +23,7 @@ typedef struct page {
 // Define the global variables
 Page *page_list;
 int time = 0;
+
 
 /*
  * Return the index of the previous reference of the page with

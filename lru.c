@@ -12,11 +12,13 @@ extern int debug;
 
 extern struct frame *coremap;
 
+// Define the data structure
 typedef struct node_t {
 	unsigned int frame; // PFN which is the index of the coremap
 	struct node_t *previous, *next;
 } Node;
 
+// Define the global variables
 Node *head; // Most recent used page (new node inserts to here)
 Node *tail; // Least recent used page (victim node evicts from here)
 Node **hash_table; // Array of pointers to the nodes

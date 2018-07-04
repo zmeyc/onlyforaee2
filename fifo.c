@@ -12,7 +12,9 @@ extern int debug;
 
 extern struct frame *coremap;
 
+// Define the global variable
 int evict; // Keep track of the oldest PFN which need to be evicted
+
 
 /* Page to evict is chosen using the fifo algorithm.
  * Returns the page frame number (which is also the index in the coremap)
@@ -32,7 +34,7 @@ int fifo_evict() {
  * Input: The page table entry for the page that is being accessed.
  */
 void fifo_ref(pgtbl_entry_t *p) {
-	// Nothing need to be updated
+	// Nothing need to be updated when reference occurs
 }
 
 /* Initialize any data structures needed for this 

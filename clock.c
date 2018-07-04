@@ -12,7 +12,9 @@ extern int debug;
 
 extern struct frame *coremap;
 
+// Define the global variable
 int hand; // Clock hand, the index of the oldest page in the coremap
+
 
 /* Page to evict is chosen using the clock algorithm.
  * Returns the page frame number (which is also the index in the coremap)
