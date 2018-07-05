@@ -11,7 +11,7 @@ traces: $(PROGS)
 	./runit simpleloop
 	./runit matmul 100
 	./runit blocked 100 25
-	./runit fibonacci 1000
+	./runit fibonacci 10000
 
 .PHONY: clean
 clean :
