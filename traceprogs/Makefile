@@ -1,5 +1,5 @@
 SRCS = simpleloop.c matmul.c blocked.c fibonacci.c
-PROGS = simpleloop matmul blocked finonacci
+PROGS = simpleloop matmul blocked fibonacci
 
 all : $(PROGS)
 
