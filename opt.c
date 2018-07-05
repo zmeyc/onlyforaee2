@@ -20,26 +20,55 @@ typedef struct page {
 	int next_ref; // Store index of the next reference of this page, -1 if none
 } Page;
 
+typedef struct node {
+	addr_t id; // Last 20 bits of virtual address
+	int ref_t; // Store reference time of id
+	struct node *next; // Pointer to the next node
+} Node; // double linked list node inside hash table
+
+typedef struct entry { // Each entry of hash_table
+	Node *head;
+	Node *tail;
+} Entry;
+
 // Define the global variables
 Page *page_list;
+Entry *hash_table;
 int time = 0;
+int size = 0; // Store the size of the tracefile to initialize the page_list
 
-
-/*
- * Return the index of the previous reference of the page with
- * virtual address vaddr if it has the previous reference.
- * Otherwise, return INF.
- */
-int find_pre(addr_t vaddr, int index) {
-	int i = index - 1;
-	while (i >= 0) {
-		if (page_list[i].id == vaddr) {
-			return i;
-		}
-		i--;
+Entry *init_hash (int size) {
+	Entry *table = malloc(sizeof(Entry) * size);
+	for (int i = 0; i < size; i++) {
+		table[i].head = NULL;
+		table[i].tail = NULL;
 	}
+	return table;
+}
 
-	return INF;
+Node *init_node (addr_t vaddr, int r_time) {
+	Node *new_node = malloc(sizeof(Node));
+	new_node->id = vaddr;
+	new_node->ref_t = r_time;
+	new_node->next = NULL;
+	return new_node;
+}
+/*
+ * Return the index of current page in hash table.
+ */
+int hash_fcn(addr_t vaddr) {
+	return (vaddr % size);
+}
+
+Node *lookup_vaddr (addr_t vaddr) {
+	Node *head = hash_table[hash_fcn(vaddr)].head;
+	while (head != NULL) {
+		if (head->id == vaddr) {
+			return head;
+		}
+		head = head->next;
+	}
+	return NULL;
 }
 
 /* Page to evict is chosen using the optimal (aka MIN) algorithm.
@@ -77,7 +106,6 @@ void opt_ref(pgtbl_entry_t *p) {
  * replacement algorithm.
  */
 void opt_init() {
-	int size = 0; // Store the size of the tracefile to initialize the page_list
 	int index = 0; // Record the current index of the page inside tracefile
 	FILE *tfp = NULL;
 
@@ -102,6 +130,8 @@ void opt_init() {
 
 	// Allocate the space for the page_list
 	page_list = malloc(sizeof(Page) * size);
+	hash_table = init_hash(size);
+	fseek(tfp, 0 ,SEEK_SET);
 
 	// Read the lines
 	while(fgets(buf, MAXLINE, tfp) != NULL) {
@@ -111,14 +141,22 @@ void opt_init() {
 				printf("%c %lx\n", type, vaddr);
 			}
 
-			// Store the information of each line
 			page_list[index].id = vaddr;
 			page_list[index].next_ref = INF;
 
-			// Keep track of the next reference
-			int pre_ref = find_pre(vaddr, index);
-			if (pre_ref != INF) { // Not the first reference
-				page_list[pre_ref].next_ref = index;
+			Node *cur_node = lookup_vaddr(vaddr);
+			Node *new_node = init_node(vaddr, index);
+			if (cur_node == NULL) { // First time allocate current page
+				if (hash_table[hash_fcn(vaddr)].head == NULL) { // No page before->head
+					hash_table[hash_fcn(vaddr)].head = new_node;
+				} else {
+					(hash_table[hash_fcn(vaddr)].tail)->next = new_node;
+				}
+				hash_table[hash_fcn(vaddr)].tail = new_node;
+
+			} else {
+				page_list[cur_node->ref_t].next_ref = index;
+				cur_node->ref_t = index;
 			}
 
 			index++;
