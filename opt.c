@@ -16,7 +16,7 @@ extern struct frame *coremap;
 
 // Define the data structure
 typedef struct page {
-	addr_t id; // Last 20 bits of virtual address
+    // addr_t id; // Last 20 bits of virtual address
 	int next_ref; // Store index of the next reference of this page, -1 if none
 } Page;
 
@@ -24,7 +24,7 @@ typedef struct node {
 	addr_t id; // Last 20 bits of virtual address
 	int ref_t; // Store reference time of id
 	struct node *next; // Pointer to the next node
-} Node; // double linked list node inside hash table
+} Node; // Double linked list node inside hash table
 
 typedef struct entry { // Each entry of hash_table
 	Node *head;
@@ -37,37 +37,55 @@ Entry *hash_table;
 int time = 0;
 int size = 0; // Store the size of the tracefile to initialize the page_list
 
-Entry *init_hash (int size) {
+/*
+ * Initialize the hash table and return it.
+ */
+Entry *init_hash(int size) {
 	Entry *table = malloc(sizeof(Entry) * size);
+
 	for (int i = 0; i < size; i++) {
 		table[i].head = NULL;
 		table[i].tail = NULL;
 	}
+
 	return table;
 }
 
-Node *init_node (addr_t vaddr, int r_time) {
+/*
+ * Initialize each node with given virtual address vaddr
+ * and the reference time r_time.
+ */
+Node *init_node(addr_t vaddr, int r_time) {
 	Node *new_node = malloc(sizeof(Node));
 	new_node->id = vaddr;
 	new_node->ref_t = r_time;
 	new_node->next = NULL;
+
 	return new_node;
 }
+
 /*
  * Return the index of current page in hash table.
  */
 int hash_fcn(addr_t vaddr) {
-	return (vaddr % size);
+	return (int) (vaddr % size);
 }
 
-Node *lookup_vaddr (addr_t vaddr) {
+/*
+ * Return the node with virtual address vaddr using
+ * the hash function hash_fcn if this node exists.
+ * Otherwise, return NULL.
+ */
+Node *lookup_vaddr(addr_t vaddr) {
 	Node *head = hash_table[hash_fcn(vaddr)].head;
+
 	while (head != NULL) {
 		if (head->id == vaddr) {
 			return head;
 		}
 		head = head->next;
 	}
+
 	return NULL;
 }
 
@@ -97,7 +115,6 @@ int opt_evict() {
  * Input: The page table entry for the page that is being accessed.
  */
 void opt_ref(pgtbl_entry_t *p) {
-	//
 	coremap[p->frame >> PAGE_SHIFT].next_ref_time = page_list[time].next_ref;
 	time++;
 }
@@ -131,7 +148,6 @@ void opt_init() {
 	// Allocate the space for the page_list
 	page_list = malloc(sizeof(Page) * size);
 	hash_table = init_hash(size);
-	fseek(tfp, 0 ,SEEK_SET);
 
 	// Read the lines
 	while(fgets(buf, MAXLINE, tfp) != NULL) {
@@ -141,7 +157,7 @@ void opt_init() {
 				printf("%c %lx\n", type, vaddr);
 			}
 
-			page_list[index].id = vaddr;
+			// page_list[index].id = vaddr;
 			page_list[index].next_ref = INF;
 
 			Node *cur_node = lookup_vaddr(vaddr);
