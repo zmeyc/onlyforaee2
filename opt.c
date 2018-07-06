@@ -34,7 +34,7 @@ typedef struct entry { // Each entry of hash_table
 Page *page_list;
 Entry *hash_table;
 int time = 0;
-int size = 0; // Store the size of the tracefile to initialize the page_list
+int size = 0; // Store the size of the tracefile to initialize data structures
 
 /*
  * Initialize the hash table and return it.
