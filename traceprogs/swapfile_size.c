@@ -27,10 +27,10 @@ int main(int argc, char *argv[]) {
     }
 
     // Calculate the unique number of virtual address
-    int unique = 0; // Number of unique virtual address
+    long int unique = 0; // Number of unique virtual address
 
-    int size = 0; // size of trace file
-    char buf[MAXLINE]; // Maxline in sim.h is 256
+    long int size = 0; // Size of trace file
+    char buf[MAXLINE];
 
     // Keep track of the size of the tracefile
     while(fgets(buf, MAXLINE, tfp) != NULL) {
@@ -39,14 +39,17 @@ int main(int argc, char *argv[]) {
         }
     }
 
+    // check size
+    printf("The size of the trace file: %ld\n", size);
+
     addr_t vaddr = 0;
     char type;
-    addr_t unique_vaddr[size];
+    addr_t *unique_vaddr = malloc(sizeof(addr_t) * size);
 
     fseek(tfp, 0, SEEK_SET);
 
     while (fgets(buf, MAXLINE, tfp) != NULL) {
-        if (strcmp(&buf[0], "=") != 0) {
+        if (buf[0] != '=') {
             sscanf(buf, "%c %lx", &type, &vaddr);
 
             if (unique == 0) {
@@ -55,7 +58,7 @@ int main(int argc, char *argv[]) {
             } else {
                 int flag = 0;
 
-                for (int i = 0; i < unique; i++) {
+                for (long int i = 0; i < unique; i++) {
                     if (unique_vaddr[i] == vaddr) {
                         flag = 1;
                     }
@@ -76,7 +79,11 @@ int main(int argc, char *argv[]) {
     }
 
     // Print the number of unique virtual address in the trace file
-    printf("The number of unique virtual address: %d\n", unique);
+    printf("The number of unique virtual address: %ld\n", unique);
+
+    free(unique_vaddr);
+
+    return 0;
 }
 
 
