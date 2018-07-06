@@ -16,7 +16,6 @@ extern struct frame *coremap;
 
 // Define the data structure
 typedef struct page {
-    // addr_t id; // Last 20 bits of virtual address
 	int next_ref; // Store index of the next reference of this page, -1 if none
 } Page;
 
@@ -148,6 +147,7 @@ void opt_init() {
 	// Allocate the space for the page_list
 	page_list = malloc(sizeof(Page) * size);
 	hash_table = init_hash(size);
+	fseek(tfp, 0, SEEK_SET);
 
 	// Read the lines
 	while(fgets(buf, MAXLINE, tfp) != NULL) {
@@ -157,7 +157,6 @@ void opt_init() {
 				printf("%c %lx\n", type, vaddr);
 			}
 
-			// page_list[index].id = vaddr;
 			page_list[index].next_ref = INF;
 
 			Node *cur_node = lookup_vaddr(vaddr);
