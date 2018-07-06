@@ -210,7 +210,23 @@ c)
 
 Para 2:
 
+Consider the HitRate for each trace file in increasing memory size
+                   50         100          150         200
+simpleloop      72.8223     73.7891      73.8086     73.8086
+matmul          63.9453     65.1494      98.8613     98.8616
+blocked         99.7842     99.8434      99.8441     99.8472
+fibonacci       96.2914     97.8132      97.8871     97.8871
+
 For the lru, as the memory size increases, the algorithm performs better.
-As memory size increases, more pages could be stored in memory. So that less evict
-is needed. Also each time algorithm evicts a page, the page been evicted will have longer
-time period that it was not referenced when memory size is bigger.
+Explanation:
+As memory size increases, more pages could be stored in memory. Therefore, there are less
+evictions needed.
+
+// ??????? how to explain ????
+
+In other words, the page which is evicted by the larger memory size lru
+has longer time period that it has not been referenced than the same page which is evicted
+by the smaller memory size.
+
+Also, when the algorithm evicts a page, the page which has been evicted will have longer
+time period that it has not been referenced when memory size is bigger.
