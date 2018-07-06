@@ -211,3 +211,6 @@ c)
 Para 2:
 
 For the lru, as the memory size increases, the algorithm performs better.
+As memory size increases, more pages could be stored in memory. So that less evict
+is needed. Also each time algorithm evicts a page, the page been evicted will have longer
+time period that it was not referenced when memory size is bigger.
