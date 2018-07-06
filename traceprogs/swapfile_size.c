@@ -39,9 +39,6 @@ int main(int argc, char *argv[]) {
         }
     }
 
-    // check size
-    printf("The size of the trace file: %ld\n", size);
-
     addr_t vaddr = 0;
     char type;
     addr_t *unique_vaddr = malloc(sizeof(addr_t) * size);
