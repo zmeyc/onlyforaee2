@@ -190,3 +190,23 @@ fifo    97.8871     6625        143               0                     0       
 clock   97.8871     6625        143               0                     0                     0
 lru     97.8871     6625        143               0                     0                     0
 opt     97.8871     6625        143               0                     0                     0
+
+b)
+
+Para 1:
+
+In general rand < fifo < clock <= lru < opt.
+
+Most of time lru performs better than clock. Since lru strictly evict the page that is not referenced the longest time, whle clock is just approximate the time.
+
+matmul: with smaller memory size random could perform much better than fifo, and even better than clock and lru.
+
+Opt always perform best.
+
+in general, algorithms perform better with larger memory size.
+
+c)
+
+Para 2:
+
+For lru, as the memory size increasing, the algorithm performs better.
