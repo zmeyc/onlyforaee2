@@ -226,10 +226,11 @@ evictions needed.
 
 In other words, the page which is evicted by the larger memory size lru
 has longer time period that it has not been referenced than the same page which is evicted
-by the smaller memory size. So that if the page will be reference periodically,
-larger memory size will lead to less eviction and lower miss rate by still keeping this
-page in memory while smaller memory might already evicted it and need to bring
-it back when new reference occurs.
+by the smaller memory size. Thus, if the pages are referenced periodically,
+larger memory size will lead to less evictions and lower miss rate since larger memory
+will keep more pages be held in the memory. In contrast, smaller memory size might lead to
+more page evictions and bringing backs since there is less space for the pages to be held in
+the memory.
 
 <!-- Also, when the algorithm evicts a page, the page which has been evicted will have longer
 time period that it has not been referenced when memory size is bigger. -->
