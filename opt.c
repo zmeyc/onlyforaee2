@@ -23,7 +23,7 @@ typedef struct node {
 	addr_t id; // Last 20 bits of virtual address
 	int ref_t; // Store reference time of id
 	struct node *next; // Pointer to the next node
-} Node; // Double linked list node inside hash table
+} Node; // Linked list node inside hash table
 
 typedef struct entry { // Each entry of hash_table
 	Node *head;
@@ -37,7 +37,7 @@ int time = 0;
 int size = 0; // Store the size of the tracefile to initialize data structures
 
 /*
- * Initialize the hash table and return it.
+ * Initialize the hash table and return the pointer.
  */
 Entry *init_hash(int size) {
 	Entry *table = malloc(sizeof(Entry) * size);
@@ -71,7 +71,7 @@ int hash_fcn(addr_t vaddr) {
 }
 
 /*
- * Return the node with virtual address vaddr using
+ * Return the pointer to the node with virtual address vaddr using
  * the hash function hash_fcn if this node exists.
  * Otherwise, return NULL.
  */
@@ -144,7 +144,7 @@ void opt_init() {
 		}
 	}
 
-	// Allocate the space for the page_list
+	// Allocate the space for the page_list and hash_table
 	page_list = malloc(sizeof(Page) * size);
 	hash_table = init_hash(size);
 	fseek(tfp, 0, SEEK_SET);
